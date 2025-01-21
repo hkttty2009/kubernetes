@@ -753,6 +753,7 @@ kube::golang::delete_coverage_dummy_test() {
 #
 # See comments in kube::golang::setup_env regarding where built binaries go.
 kube::golang::build_some_binaries() {
+  set -x
   if [[ -n "${KUBE_BUILD_WITH_COVERAGE:-}" ]]; then
     local -a uncovered=()
     for package in "$@"; do
@@ -782,6 +783,7 @@ kube::golang::build_some_binaries() {
     V=2 kube::log::info "Coverage is disabled."
     GOPROXY=off go install "${build_args[@]}" "$@"
   fi
+  set +x
 }
 
 # Args:
@@ -897,13 +899,15 @@ kube::golang::build_binaries() {
   # build_binaries_for_platform.
   local goflags goldflags gogcflags gotags
 
+  set -x
+
   goflags=()
   gogcflags="${GOGCFLAGS:-}"
   goldflags="all=$(kube::version::ldflags) ${GOLDFLAGS:-}"
 
-  if [[ "${DBG:-}" == 1 ]]; then
+  if [[ true ]]; then
       # Debugging - disable optimizations and inlining and trimPath
-      gogcflags="${gogcflags} all=-N -l"
+      gogcflags="all=-N -l"
   else
       # Not debugging - disable symbols and DWARF, trim embedded paths
       goldflags="${goldflags} -s -w"
@@ -912,6 +916,8 @@ kube::golang::build_binaries() {
 
   # Extract tags if any specified in GOFLAGS
   gotags="selinux,notest,$(echo "${GOFLAGS:-}" | sed -ne 's|.*-tags=\([^-]*\).*|\1|p')"
+
+  set +x
 
   local -a targets=()
   local arg
